@@ -33,6 +33,13 @@ const MessagePage = () => {
   })
   const [loading,setLoading] = useState(false)
   const [allMessage,setAllMessage] = useState([])
+/////////////////////////////////////////
+const [isTyping, setIsTyping] = useState(false); // **NEW**
+const typingTimeoutRef = useRef(null); // **NEW**x  
+
+/////////////
+
+
   const currentMessage = useRef(null)
 
   useEffect(()=>{
@@ -108,9 +115,29 @@ const MessagePage = () => {
           setAllMessage(data)
         })
 
+        ////////////////////////////////////
+         // **NEW**: Listen for typing indicator events
+      socketConnection.on('typing', ({ senderId }) => {
+        if (senderId === params.userId) {
+          setIsTyping(true);
+        }
+      });
+
+      socketConnection.on('stop typing', ({ senderId }) => {
+        if (senderId === params.userId) {
+          setIsTyping(false);
+        }
+      });
+    
+
 
       }
   },[socketConnection,params?.userId,user])
+
+//////////////////////////////////
+
+
+
 
   const handleOnChange = (e)=>{
     const { name, value} = e.target
@@ -121,6 +148,16 @@ const MessagePage = () => {
         text : value
       }
     })
+    ///////////////////////
+    // **NEW**: Emit typing event and set a timer to stop typing
+    if (socketConnection) {
+      socketConnection.emit('typing', { receiverId: params.userId });
+      clearTimeout(typingTimeoutRef.current);
+
+      typingTimeoutRef.current = setTimeout(() => {
+        socketConnection.emit('stop typing', { receiverId: params.userId });
+      }, 2000); // Typing indicator disappears after 2 seconds of inactivity
+    }
   }
 
   const handleSendMessage = (e)=>{
@@ -141,44 +178,42 @@ const MessagePage = () => {
           imageUrl : "",
           videoUrl : ""
         })
+        /////////////////////
+         // **NEW**: Stop typing once the message is sent
+         socketConnection.emit('stop typing', { receiverId: params.userId });
       }
     }
   }
 
 
   return (
-    <div style={{ backgroundImage : `url(${backgroundImage})`}} className='bg-no-repeat bg-cover'>
-          <header className='sticky top-0 h-16 bg-white flex justify-between items-center px-4'>
-              <div className='flex items-center gap-4'>
-                  <Link to={"/"} className='lg:hidden'>
-                      <FaAngleLeft size={25}/>
-                  </Link>
-                  <div>
-                      <Avatar
-                        width={50}
-                        height={50}
-                        imageUrl={dataUser?.profile_pic}
-                        name={dataUser?.name}
-                        userId={dataUser?._id}
-                      />
-                  </div>
-                  <div>
-                     <h3 className='font-semibold text-lg my-0 text-ellipsis line-clamp-1'>{dataUser?.name}</h3>
-                     <p className='-my-2 text-sm'>
-                      {
-                        dataUser.online ? <span className='text-primary'>online</span> : <span className='text-slate-400'>offline</span>
-                      }
-                     </p>
-                  </div>
-              </div>
+    <div style={{ backgroundImage: `url(${backgroundImage})` }} className='bg-no-repeat bg-cover'>
+      <header className='sticky top-0 h-16 bg-white flex justify-between items-center px-4'>
+        <div className='flex items-center gap-4'>
+          <Link to={"/"} className='lg:hidden'>
+            <FaAngleLeft size={25} />
+          </Link>
+          <Avatar
+            width={50}
+            height={50}
+            imageUrl={dataUser?.profile_pic}
+            name={dataUser?.name}
+            userId={dataUser?._id}
+          />
+          <div>
+            <h3 className='font-semibold text-lg my-0 text-ellipsis line-clamp-1'>{dataUser?.name}</h3>
+            <p className='-my-2 text-sm'>
+              {dataUser.online ? <span className='text-primary'>online</span> : <span className='text-slate-400'>offline</span>}
+              {isTyping && <span className='text-primary ml-2'>typing...</span>} {/* **NEW** */}
+            </p>
+          </div>
+        </div>
+        <button className='cursor-pointer hover:text-primary'>
+          <HiDotsVertical />
+        </button>
+      </header>
 
-              <div >
-                    <button className='cursor-pointer hover:text-primary'>
-                      <HiDotsVertical/>
-                    </button>
-              </div>
-          </header>
-
+      
           {/***show all message */}
           <section className='h-[calc(100vh-128px)] overflow-x-hidden overflow-y-scroll scrollbar relative bg-slate-200 bg-opacity-50'>
                   
