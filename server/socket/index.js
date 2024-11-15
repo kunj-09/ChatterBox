@@ -32,19 +32,19 @@ io.on('connection', async (socket) => {
     // current user details
     const user = await getUserDetailsFromToken(token);
 
-    // If the user is not found or authenticated, disconnect the socket
-    if (!user) {
-        console.log("User not authenticated, disconnecting socket.");
-        socket.disconnect(); // Disconnect the socket if no user is found
-        return;
-    }
+   // **CHANGE 1**: Add a check to ensure `user` is defined
+   if (!user || !user._id) {
+    console.log("User not authenticated or user._id missing, disconnecting socket.");
+    socket.disconnect(); // Disconnect the socket if no user is found or _id is missing
+    return;
+}
 
-    // create a room for the user based on their user ID
-    socket.join(user._id.toString());
-    onlineUser.add(user._id.toString());
+// **CHANGE 2**: Add a condition to check that `user._id` exists before calling `toString`
+socket.join(user._id.toString());
+onlineUser.add(user._id.toString());
 
-    // Emit the updated list of online users
-    io.emit('onlineUser', Array.from(onlineUser));
+// Emit the updated list of online users
+io.emit('onlineUser', Array.from(onlineUser));
 
     // Handle the 'message-page' event to fetch user details and previous messages
     socket.on('message-page', async (userId) => {
