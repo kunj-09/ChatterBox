@@ -74,13 +74,15 @@ const Home = () => {
 
         <div className={`justify-center items-center flex-col gap-2 hidden ${!basePath ? "hidden" : "lg:flex" }`}>
             <div>
-              <img
+              {/* <img
                 src={logo}
                 width={250}
                 alt='logo'
-              />
+              /> */}
             </div>
-            <p className='text-lg mt-2 text-slate-500'>Select user to send message</p>
+            <p className="text-4xl font-bold text-gray-800 tracking-wide uppercase mt-2">ChatterBox</p>
+
+
         </div>
     </div>
   )
